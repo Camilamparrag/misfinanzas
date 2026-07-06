@@ -1,5 +1,79 @@
 from django import forms
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.models import User
+
 from .models import Categoria, Ingreso, Gasto, Presupuesto
+
+
+class RegistroForm(UserCreationForm):
+    first_name = forms.CharField(
+        label="Nombre", max_length=30, widget=forms.TextInput(attrs={"class": "form-control"})
+    )
+    last_name = forms.CharField(
+        label="Apellido", max_length=30, widget=forms.TextInput(attrs={"class": "form-control"})
+    )
+    email = forms.EmailField(
+        label="Correo electrónico", widget=forms.EmailInput(attrs={"class": "form-control"})
+    )
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ["username", "first_name", "last_name", "email"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].widget.attrs.update({"class": "form-control"})
+        self.fields["password1"].widget.attrs.update({"class": "form-control"})
+        self.fields["password2"].widget.attrs.update({"class": "form-control"})
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+        if email and User.objects.filter(email=email).exists():
+            raise forms.ValidationError("Este correo electrónico ya está registrado.")
+        return email
+
+
+class PerfilForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "email"]
+        labels = {
+            "first_name": "Nombre",
+            "last_name": "Apellido",
+            "email": "Correo electrónico",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.update({"class": "form-control"})
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+        if email and User.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
+            raise forms.ValidationError("Este correo electrónico ya está registrado.")
+        return email
+
+
+class LoginForm(AuthenticationForm):
+    username = forms.CharField(
+        label="Usuario o correo electrónico",
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+    password = forms.CharField(
+        label="Contraseña",
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
+    )
+
+    def clean_username(self):
+        username = self.cleaned_data.get("username")
+        if username and "@" in username:
+            try:
+                user = User.objects.get(email=username)
+                return user.username
+            except User.DoesNotExist:
+                pass
+        return username
 
 
 class CategoriaForm(forms.ModelForm):

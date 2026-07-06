@@ -1,40 +1,82 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.views import LoginView
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import login
+from django.contrib.auth.views import LoginView, PasswordChangeView
+from django.contrib.auth import login, update_session_auth_hash
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import (
-    ListView, CreateView, UpdateView, DeleteView, TemplateView, FormView
+    ListView, CreateView, UpdateView, DeleteView, TemplateView, FormView, UpdateView
 )
 from django.db.models import Sum, Q
 from django.shortcuts import render, redirect
 from datetime import date
 
 from .models import Categoria, Ingreso, Gasto, Presupuesto
-from .forms import CategoriaForm, IngresoForm, GastoForm, PresupuestoForm
+from .forms import (
+    CategoriaForm, IngresoForm, GastoForm, PresupuestoForm,
+    RegistroForm, PerfilForm, LoginForm,
+)
 
 
 # ─── Autenticación ───────────────────────────────────────────────
 
 class CustomLoginView(LoginView):
     template_name = "registration/login.html"
+    form_class = LoginForm
 
     def get_success_url(self):
-        messages.success(self.request, "Inicio de sesión exitoso.")
+        messages.success(self.request, f"Inicio de sesión exitoso. ¡Bienvenido {self.request.user.first_name or self.request.user.username}!")
         return reverse_lazy("dashboard")
+
+    def form_valid(self, form):
+        remember_me = self.request.POST.get("remember_me")
+        if not remember_me:
+            self.request.session.set_expiry(0)
+        return super().form_valid(form)
 
 
 class RegisterView(FormView):
     template_name = "registration/register.html"
-    form_class = UserCreationForm
+    form_class = RegistroForm
     success_url = reverse_lazy("dashboard")
 
     def form_valid(self, form):
         user = form.save()
         login(self.request, user)
-        messages.success(self.request, "Registro exitoso. ¡Bienvenido!")
+        messages.success(self.request, f"Registro exitoso. ¡Bienvenido {user.first_name or user.username}!")
         return super().form_valid(form)
+
+
+# ─── Perfil de Usuario ───────────────────────────────────────────
+
+class PerfilView(LoginRequiredMixin, TemplateView):
+    template_name = "core/perfil.html"
+
+
+class PerfilUpdateView(LoginRequiredMixin, FormView):
+    template_name = "core/perfil_form.html"
+    form_class = PerfilForm
+    success_url = reverse_lazy("perfil")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["instance"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        form.save()
+        messages.success(self.request, "Perfil actualizado exitosamente.")
+        return super().form_valid(form)
+
+
+class CambiarPasswordView(LoginRequiredMixin, PasswordChangeView):
+    template_name = "core/cambiar_password.html"
+    success_url = reverse_lazy("perfil")
+
+    def form_valid(self, form):
+        result = super().form_valid(form)
+        update_session_auth_hash(self.request, form.user)
+        messages.success(self.request, "Contraseña cambiada exitosamente.")
+        return result
 
 
 # ─── Dashboard ───────────────────────────────────────────────────

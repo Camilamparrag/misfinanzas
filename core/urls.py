@@ -29,6 +29,10 @@ urlpatterns = [
     path("presupuestos/nuevo/", views.PresupuestoCreateView.as_view(), name="presupuesto_create"),
     path("presupuestos/<int:pk>/editar/", views.PresupuestoUpdateView.as_view(), name="presupuesto_update"),
     path("presupuestos/<int:pk>/eliminar/", views.PresupuestoDeleteView.as_view(), name="presupuesto_delete"),
+    # Perfil
+    path("perfil/", views.PerfilView.as_view(), name="perfil"),
+    path("perfil/editar/", views.PerfilUpdateView.as_view(), name="perfil_editar"),
+    path("perfil/cambiar-password/", views.CambiarPasswordView.as_view(), name="cambiar_password"),
     # Resumen
     path("resumen/", views.ResumenView.as_view(), name="resumen"),
     # Búsqueda
