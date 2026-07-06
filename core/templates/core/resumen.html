@@ -1,0 +1,61 @@
+{% extends "core/base.html" %}
+{% block title %}Resumen Financiero{% endblock %}
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-bar-chart"></i> Resumen Financiero</h2>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-success shadow h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-arrow-down-circle fs-1 text-success"></i>
+                <p class="text-muted mt-2">Total Ingresos</p>
+                <h4 class="text-success fw-bold">${{ total_ingresos|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-danger shadow h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-arrow-up-circle fs-1 text-danger"></i>
+                <p class="text-muted mt-2">Total Gastos</p>
+                <h4 class="text-danger fw-bold">${{ total_gastos|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-{{ balance|yesno:'success,danger,secondary' }} shadow h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-wallet2 fs-1 text-{{ balance|yesno:'success,danger,secondary' }}"></i>
+                <p class="text-muted mt-2">Balance</p>
+                <h4 class="fw-bold text-{{ balance|yesno:'success,danger,secondary' }}">${{ balance|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-info shadow h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-calculator fs-1 text-info"></i>
+                <p class="text-muted mt-2">Promedio de Gasto</p>
+                <h4 class="text-info fw-bold">${{ promedio_gasto|floatformat:0 }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if categoria_mayor_gasto %}
+<div class="card shadow">
+    <div class="card-body">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-trophy fs-1 text-warning me-3"></i>
+            <div>
+                <h5 class="mb-1">Categoría con Mayor Gasto</h5>
+                <h4 class="text-danger fw-bold mb-0">
+                    {{ categoria_mayor_gasto.categoria__nombre }} 
+                    <span class="badge bg-danger fs-6">${{ categoria_mayor_gasto.total|floatformat:0 }}</span>
+                </h4>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

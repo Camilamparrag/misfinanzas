@@ -1,0 +1,185 @@
+{% extends "core/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-success shadow h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Total Ingresos</p>
+                        <h3 class="text-success fw-bold mb-0">${{ total_ingresos|floatformat:0 }}</h3>
+                    </div>
+                    <i class="bi bi-arrow-down-circle fs-1 text-success opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-danger shadow h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Total Gastos</p>
+                        <h3 class="text-danger fw-bold mb-0">${{ total_gastos|floatformat:0 }}</h3>
+                    </div>
+                    <i class="bi bi-arrow-up-circle fs-1 text-danger opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-{{ balance|yesno:'success,danger,secondary' }} shadow h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Balance</p>
+                        <h3 class="fw-bold mb-0 text-{{ balance|yesno:'success,danger,secondary' }}">
+                            ${{ balance|floatformat:0 }}
+                        </h3>
+                    </div>
+                    <i class="bi bi-wallet2 fs-1 text-{{ balance|yesno:'success,danger,secondary' }} opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-info shadow h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Movimientos</p>
+                        <h3 class="text-info fw-bold mb-0">{{ cantidad_movimientos }}</h3>
+                    </div>
+                    <i class="bi bi-arrow-left-right fs-1 text-info opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-8">
+        <div class="card shadow h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Últimos Movimientos</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Descripción</th>
+                                <th>Monto</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ingreso in ultimos_ingresos %}
+                            <tr>
+                                <td><span class="badge bg-success">Ingreso</span></td>
+                                <td>{{ ingreso.descripcion }}</td>
+                                <td class="text-success fw-bold">+${{ ingreso.monto|floatformat:0 }}</td>
+                                <td>{{ ingreso.fecha|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% for gasto in ultimos_gastos %}
+                            <tr>
+                                <td><span class="badge bg-danger">Gasto</span></td>
+                                <td>{{ gasto.descripcion }}</td>
+                                <td class="text-danger fw-bold">-${{ gasto.monto|floatformat:0 }}</td>
+                                <td>{{ gasto.fecha|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not ultimos_ingresos and not ultimos_gastos %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">
+                                    <i class="bi bi-inbox"></i> No hay movimientos aún.
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Gastos por Categoría</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="chartGastos" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if presupuesto %}
+<div class="card shadow mt-3">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">
+            <i class="bi bi-piggy-bank"></i> Presupuesto {{ presupuesto.get_mes_display }} {{ presupuesto.año }}
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row text-center mb-3">
+            <div class="col-4">
+                <small class="text-muted d-block">Presupuesto</small>
+                <strong>${{ presupuesto.monto|floatformat:0 }}</strong>
+            </div>
+            <div class="col-4">
+                <small class="text-muted d-block">Gastado</small>
+                <strong class="text-danger">${{ gasto_mes|floatformat:0 }}</strong>
+            </div>
+            <div class="col-4">
+                <small class="text-muted d-block">Disponible</small>
+                <strong class="{% if disponible >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    ${{ disponible|floatformat:0 }}
+                </strong>
+            </div>
+        </div>
+        <div class="progress" style="height: 25px;">
+            <div class="progress-bar {% if porcentaje_presupuesto > 100 %}bg-danger{% elif porcentaje_presupuesto > 80 %}bg-warning{% else %}bg-success{% endif %}" 
+                 role="progressbar" 
+                 style="width: {{ porcentaje_presupuesto|floatformat:0 }}%;">
+                {{ porcentaje_presupuesto|floatformat:0 }}%
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if gastos_por_categoria %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var ctx = document.getElementById('chartGastos').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for g in gastos_por_categoria %}'{{ g.categoria__nombre }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for g in gastos_por_categoria %}{{ g.total|floatformat:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: [
+                    '#dc3545', '#fd7e14', '#ffc107', '#198754', 
+                    '#0d6efd', '#6610f2', '#d63384', '#20c997',
+                    '#adb5bd', '#495057'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { font: { size: 11 } }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

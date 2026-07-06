@@ -1,0 +1,83 @@
+{% extends "core/base.html" %}
+{% block title %}Presupuestos{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-piggy-bank"></i> Presupuestos Mensuales</h2>
+    <a href="{% url 'presupuesto_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Nuevo Presupuesto
+    </a>
+</div>
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Mes</th>
+                        <th>Año</th>
+                        <th>Presupuesto</th>
+                        <th>Gastado</th>
+                        <th>Disponible</th>
+                        <th>Progreso</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in presupuestos %}
+                    <tr>
+                        <td>{{ p.get_mes_display }}</td>
+                        <td>{{ p.año }}</td>
+                        <td class="fw-bold">${{ p.monto|floatformat:0 }}</td>
+                        <td class="text-danger">${{ p.gastado|floatformat:0 }}</td>
+                        <td class="{% if p.disponible >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold">
+                            ${{ p.disponible|floatformat:0 }}
+                        </td>
+                        <td style="min-width: 150px;">
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar {% if p.porcentaje > 100 %}bg-danger{% elif p.porcentaje > 80 %}bg-warning{% else %}bg-success{% endif %}" 
+                                     role="progressbar" 
+                                     style="width: {{ p.porcentaje|floatformat:0 }}%;" 
+                                     aria-valuenow="{{ p.porcentaje|floatformat:0 }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    {{ p.porcentaje|floatformat:0 }}%
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="{% url 'presupuesto_update' p.pk %}" class="btn btn-sm btn-warning">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'presupuesto_delete' p.pk %}" class="btn btn-sm btn-danger">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox"></i> No hay presupuestos registrados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if is_paginated %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page=1">&laquo;</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&lsaquo;</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">&rsaquo;</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">&raquo;</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
